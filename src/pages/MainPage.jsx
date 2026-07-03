@@ -24,35 +24,12 @@ export default function MainPage() {
   // 맞춤법 점검용 고정 키 (Gemini)
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
   
-  // 그림 생성용 사용자 입력 키 (OpenAI)
-  const [apiKey, setApiKey] = useState('');
-  const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  // 그림 생성용 사용자 입력 키 (OpenAI) - 이제 .env에서 관리
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
   const [isLoading, setIsLoading] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
 
   const qrRef = useRef(null);
-
-  useEffect(() => {
-    const savedKey = localStorage.getItem('openai_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-      setIsApiKeySaved(true);
-    }
-  }, []);
-
-  const saveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem('openai_api_key', apiKey.trim());
-      setIsApiKeySaved(true);
-      alert("API 키가 저장되었습니다!");
-    }
-  };
-
-  const clearApiKey = () => {
-    localStorage.removeItem('openai_api_key');
-    setApiKey('');
-    setIsApiKeySaved(false);
-  };
 
   const handleCheck = async () => {
     if (!content.trim()) {
@@ -96,7 +73,7 @@ export default function MainPage() {
     }
 
     if (!apiKey) {
-      alert("그림을 그리려면 우측 상단에 OpenAI API 키를 먼저 입력해주세요! 🔑");
+      alert("루트 폴더의 .env 파일에 VITE_OPENAI_API_KEY를 입력해주세요!");
       return;
     }
 
@@ -189,25 +166,7 @@ export default function MainPage() {
 
   return (
     <div className="main-layout">
-      <div className="api-key-container glass-panel">
-        <span>🔑 OpenAI API 키:</span>
-        {!isApiKeySaved ? (
-          <>
-            <input 
-              type="password" 
-              value={apiKey} 
-              onChange={(e) => setApiKey(e.target.value)} 
-              placeholder="sk-..." 
-            />
-            <button className="btn btn-primary btn-small" onClick={saveApiKey}>저장</button>
-          </>
-        ) : (
-          <>
-            <span className="api-saved-text">✅ 저장됨</span>
-            <button className="btn btn-secondary btn-small" onClick={clearApiKey}>변경</button>
-          </>
-        )}
-      </div>
+      {/* API Key UI 제거됨 */}
 
       <div className="panes-container">
         <div className="pane left-pane glass-panel">
