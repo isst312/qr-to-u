@@ -20,6 +20,7 @@ export default function MainPage() {
   const [showQR, setShowQR] = useState(false);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // 맞춤법 점검용 고정 키 (Gemini)
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -32,8 +33,9 @@ export default function MainPage() {
   const qrRef = useRef(null);
 
   const handleCheck = async () => {
+    setErrorMessage('');
     if (!content.trim()) {
-      alert("편지 본문을 먼저 적어주세요!");
+      setErrorMessage("편지 본문을 먼저 적어주세요!");
       return;
     }
 
@@ -59,7 +61,7 @@ export default function MainPage() {
       const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "결과를 받아오지 못했습니다.";
       setSuggestion(resultText);
     } catch (error) {
-      alert("오류가 발생했습니다. API 키가 정확한지 확인해주세요.");
+      setErrorMessage("맞춤법 점검 오류: API 키 또는 네트워크 상태를 확인해주세요.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -67,13 +69,14 @@ export default function MainPage() {
   };
 
   const handleComplete = async () => {
+    setErrorMessage('');
     if (!content.trim() || !sender.trim() || !recipient.trim()) {
-      alert("받는 분, 편지 내용, 보내는 사람을 모두 입력해주세요!");
+      setErrorMessage("받는 분, 편지 내용, 보내는 사람을 모두 입력해주세요!");
       return;
     }
 
     if (!apiKey) {
-      alert("루트 폴더의 .env 파일에 VITE_OPENAI_API_KEY를 입력해주세요!");
+      setErrorMessage("루트 폴더의 .env 파일에 VITE_OPENAI_API_KEY를 입력해주세요!");
       return;
     }
 
@@ -117,7 +120,7 @@ export default function MainPage() {
         localStorage.setItem('current_drawing', generatedImages[0]);
       }
     } catch (error) {
-      alert(`앗! 로봇 화가가 넘어졌어요 😭\n\n[이유]\n${error.message}\n\nAPI 키가 정확한지 확인해주세요!`);
+      setErrorMessage(`앗! 로봇 화가가 넘어졌어요 😭 [이유] ${error.message}`);
       console.error(error);
       setShowModal(false);
     } finally {
@@ -241,6 +244,11 @@ export default function MainPage() {
           </div>
 
           <div className="action-buttons" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+            {errorMessage && (
+              <div style={{ color: '#d32f2f', background: '#ffebee', padding: '8px 12px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', width: '100%', textAlign: 'right' }}>
+                🔔 {errorMessage}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 className="btn btn-secondary" 
