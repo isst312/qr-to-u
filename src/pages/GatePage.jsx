@@ -5,7 +5,7 @@ const GatePage = () => {
   const navigate = useNavigate();
 
   const handleAgree = () => {
-    navigate('/main');
+    navigate('/login');
   };
 
   const handleDisagree = () => {

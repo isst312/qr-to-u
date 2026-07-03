@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import LZString from 'lz-string';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 
 const DUMMY_EXAMPLES = {
   low: "To. 사랑하는 할머니께\n\n할머니, 안녕하세요? 저 지훈이에요!\n\n요즘 날씨가 많이 더워졌는데 건강은 어떠신가요?\n저는 학교에서 친구들이랑 재밌게 놀고 있어요.\n이번 주말에 꼭 놀러 갈게요!\n\n항상 건강하세요. 사랑해요!\n\n2026년 6월 14일\nFrom. 지훈 올림",
@@ -23,6 +26,60 @@ export default function MainPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const navigate = useNavigate();
+
+  // 사용자 정보 확인 및 데이터 불러오기
+  const currentUser = localStorage.getItem('current_user');
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) {
+      alert("로그인이 필요합니다!");
+      navigate('/login');
+      return;
+    }
+
+    const loadUserData = async () => {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', currentUser));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data.recipient) setRecipient(data.recipient);
+          if (data.content) setContent(data.content);
+          if (data.sender) setSender(data.sender);
+        }
+      } catch (error) {
+        console.error("데이터 불러오기 실패:", error);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+    loadUserData();
+  }, [currentUser, navigate]);
+
+  // 편지 내용 변경 시 자동 저장
+  useEffect(() => {
+    if (isDataLoaded && currentUser) {
+      const saveUserData = async () => {
+        try {
+          await setDoc(doc(db, 'users', currentUser), {
+            recipient,
+            content,
+            sender,
+            lastUpdatedAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (error) {
+          console.error("자동 저장 실패:", error);
+        }
+      };
+      
+      const timeoutId = setTimeout(() => {
+        saveUserData();
+      }, 1000); // 1초 디바운스
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [recipient, content, sender, isDataLoaded, currentUser]);
   
   // 맞춤법 점검용 고정 키 (Gemini)
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
