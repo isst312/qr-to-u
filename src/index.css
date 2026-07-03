@@ -96,7 +96,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 5rem 2rem 2rem 2rem;
-  height: 100vh;
+  min-height: 100vh;
   max-width: 1400px;
   margin: 0 auto;
   position: relative;
