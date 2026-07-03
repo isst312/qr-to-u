@@ -99,9 +99,9 @@ const GatePage = () => {
             동의하지 않음
           </button>
         </div>
-      </div>
-      <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: 'var(--ph-body)', opacity: 0.8 }}>
-        제작자: 서울대방초등학교 교사 이시온
+        <div style={{ textAlign: 'center', marginTop: '30px', fontSize: '14px', color: 'var(--ph-body)', opacity: 0.8, fontWeight: 500 }}>
+          제작자: 서울대방초등학교 교사 이시온
+        </div>
       </div>
     </div>
   );
