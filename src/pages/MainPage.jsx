@@ -282,9 +282,9 @@ export default function MainPage() {
           </div>
 
           <div className="action-buttons" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-            {(!content.trim() || !sender.trim() || !recipient.trim()) && (
+            {!content.trim() && (
               <div style={{ color: 'var(--ph-body)', fontSize: '13px', marginBottom: '4px' }}>
-                💡 <b>받는 사람, 편지 본문, 쓴 사람</b>을 모두 입력해야 버튼이 활성화됩니다!
+                💡 <b>편지 본문</b>을 작성해야 버튼이 활성화됩니다!
               </div>
             )}
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -298,7 +298,7 @@ export default function MainPage() {
               <button 
                 className="btn btn-primary" 
                 onClick={handleComplete}
-                disabled={isImageLoading || !content.trim() || !sender.trim() || !recipient.trim()}
+                disabled={isImageLoading || !content.trim()}
               >
                 🚀 그림 만들기
               </button>
