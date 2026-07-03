@@ -282,23 +282,16 @@ export default function MainPage() {
           </div>
 
           <div className="action-buttons" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-            {!content.trim() && (
-              <div style={{ color: 'var(--ph-body)', fontSize: '13px', marginBottom: '4px' }}>
-                💡 <b>편지 본문</b>을 작성해야 버튼이 활성화됩니다!
-              </div>
-            )}
             <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 className="btn btn-secondary" 
                 onClick={handleCheck} 
-                disabled={isLoading || !content.trim()}
               >
                 ✨ 맞춤법 점검
               </button>
               <button 
                 className="btn btn-primary" 
                 onClick={handleComplete}
-                disabled={isImageLoading || !content.trim()}
               >
                 🚀 그림 만들기
               </button>
