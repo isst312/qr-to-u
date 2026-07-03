@@ -21,6 +21,8 @@ export default function MainPage() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   
   // 맞춤법 점검용 고정 키 (Gemini)
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -128,6 +130,92 @@ export default function MainPage() {
     }
   };
 
+  const generatePostcardBase64 = async (imageSrc, r, c, s) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024 + 600; 
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.drawImage(img, 0, 0, 1024, 1024);
+        
+        ctx.fillStyle = '#23251d';
+        ctx.font = '50px "Nanum Pen Script", cursive, sans-serif';
+        
+        ctx.fillText(`To. ${r}`, 50, 1024 + 80);
+        
+        const maxWidth = 924;
+        let y = 1024 + 160;
+        const lines = c.split('\n');
+        for (let line of lines) {
+          let words = line.split('');
+          let currentLine = '';
+          for(let n = 0; n < words.length; n++) {
+            let testLine = currentLine + words[n];
+            let metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && n > 0) {
+              ctx.fillText(currentLine, 50, y);
+              currentLine = words[n];
+              y += 60;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          ctx.fillText(currentLine, 50, y);
+          y += 60;
+        }
+        
+        ctx.textAlign = 'right';
+        ctx.fillText(`From. ${s}`, 974, y + 60);
+        
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => reject(new Error("이미지를 합성하는 중 오류가 발생했습니다."));
+      img.src = imageSrc;
+    });
+  };
+
+  const uploadToImgBB = async (base64Data) => {
+    const API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+    if (!API_KEY) throw new Error("루트 폴더의 .env 파일에 VITE_IMGBB_API_KEY를 입력해주세요!");
+    
+    const base64Image = base64Data.split(',')[1];
+    const formData = new FormData();
+    formData.append("image", base64Image);
+    
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) throw new Error("ImgBB 업로드 실패");
+    const data = await response.json();
+    return data.data.url;
+  };
+
+  const handleCreateQR = async () => {
+    if (!selectedImage) return;
+    setIsUploading(true);
+    setErrorMessage('');
+    try {
+      const combinedBase64 = await generatePostcardBase64(selectedImage, recipient, content, sender);
+      const url = await uploadToImgBB(combinedBase64);
+      setQrCodeUrl(url);
+      setShowQR(true);
+    } catch (error) {
+      setErrorMessage(`업로드 실패: ${error.message}`);
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDownloadQR = async () => {
     if (qrRef.current) {
       const dataUrl = await toPng(qrRef.current);
@@ -162,10 +250,6 @@ export default function MainPage() {
   };
 
   const currentExample = suggestion ? suggestion : DUMMY_EXAMPLES[grade];
-  
-  const dataObject = { content, sender, recipient, imgId: 'current_drawing' };
-  const compressedData = LZString.compressToEncodedURIComponent(JSON.stringify(dataObject));
-  const qrUrl = `${window.location.origin}/result?d=${compressedData}`;
 
   return (
     <div className="main-layout">
@@ -290,7 +374,9 @@ export default function MainPage() {
                     </div>
                     <div className="modal-actions">
                       <button className="btn btn-secondary" onClick={handleComplete}>다시 만들기</button>
-                      <button className="btn btn-primary" onClick={() => setShowQR(true)}>QR 생성</button>
+                      <button className="btn btn-primary" onClick={handleCreateQR} disabled={isUploading}>
+                        {isUploading ? '업로드 중...' : 'QR 생성'}
+                      </button>
                       <button className="btn" onClick={() => setShowModal(false)}>닫기</button>
                     </div>
                   </>
@@ -302,7 +388,7 @@ export default function MainPage() {
                 <p>프린트해서 점선을 따라 오리거나, <b>QR을 클릭해서 복사</b>해보세요.</p>
                 <div className="qr-wrapper" ref={qrRef} onClick={handleCopyQR} title="클릭해서 복사하기" style={{ cursor: 'pointer' }}>
                   <div className="qr-border" style={{ border: '2px dashed black', padding: '20px', borderRadius: '4px' }}>
-                    <QRCodeSVG value={qrUrl} size={150} />
+                    <QRCodeSVG value={qrCodeUrl} size={150} />
                     <p className="qr-sender" style={{ marginTop: '15px', fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'center', color: 'black' }}>
                       From. {sender}
                     </p>
